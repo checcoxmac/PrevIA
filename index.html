@@ -2,523 +2,469 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BizManager Pro</title>
-
-  <script src="https://cdn.tailwindcss.com"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>PrevIA Works</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
   <link rel="stylesheet" href="./style.css" />
 </head>
-
-<body class="h-screen flex flex-col overflow-hidden bg-gray-50">
-  <header class="bg-white border-b border-gray-100 px-6 py-4 flex justify-between items-center">
-    <div class="flex items-center gap-3">
-      <h1 class="text-xl font-bold">BizManager Pro</h1>
-      <span class="chip" id="company-name">La tua ditta</span>
-      <span id="storage-badge" class="chip storage-badge hidden"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Salvataggio disattivato</span>
-    </div>
-    <div class="flex gap-2">
-      <button id="btn-company" class="btn-soft-gray px-3 py-2 rounded-lg text-sm font-semibold">
-        <i class="fa-solid fa-pen-to-square mr-1"></i>Ditta
-      </button>
-      <button id="btn-logo-upload" class="btn-soft-gray px-3 py-2 rounded-lg text-sm font-semibold">
-        <i class="fa-solid fa-image mr-1"></i>Logo
-      </button>
-      <button id="btn-backup" class="btn-soft-gray px-3 py-2 rounded-lg text-sm font-semibold">
-        <i class="fa-solid fa-download mr-1"></i>Backup
-      </button>
-      <label class="btn-soft-gray px-3 py-2 rounded-lg text-sm font-semibold cursor-pointer">
-        <i class="fa-solid fa-upload mr-1"></i>Import
-        <input id="file-import" type="file" accept="application/json" class="hidden" />
-      </label>
-      <button id="btn-reset-all" class="btn-danger px-3 py-2 rounded-lg text-sm font-semibold">
-        <i class="fa-solid fa-rotate-left mr-1"></i>Reset Tutto
-      </button>
-    </div>
-    <input type="file" id="logo-file-input" accept="image/*" style="display: none;" />
-  </header>
-
-  <nav class="bg-white border-b border-gray-100 px-6 py-3 flex gap-2 overflow-x-auto">
-    <button class="tab-btn tab-btn-active" data-tab="tab-home">
-      <i class="fa-solid fa-house mr-1"></i>Home
-    </button>
-    <button class="tab-btn" data-tab="tab-jobs">
-      <i class="fa-solid fa-briefcase mr-1"></i>Lavori
-    </button>
-    <button class="tab-btn" data-tab="tab-quotes">
-      <i class="fa-solid fa-file-invoice-dollar mr-1"></i>Preventivi
-    </button>
-    <button class="tab-btn" data-tab="tab-products">
-      <i class="fa-solid fa-box mr-1"></i>Storico Prodotti
-    </button>
-  </nav>
-
-  <div id="storage-warning" class="hidden text-sm text-orange-700 bg-orange-50 border border-orange-200 px-4 py-2">
-    Salvataggio disattivato dal browser: usa Backup per non perdere i dati. Suggerimento: apri via http://localhost (Live Server) per abilitare lo storage.
-  </div>
-
-  <main class="flex-1 overflow-y-auto">
-    <div class="max-w-6xl mx-auto p-6 space-y-6">
-
-      <!-- TAB: HOME -->
-      <section id="tab-home" class="tab-section">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <button id="btn-new-job" class="apple-card p-6 text-center hover:shadow-lg transition">
-            <i class="fa-solid fa-plus text-3xl text-blue-600 mb-2"></i>
-            <p class="font-bold text-gray-900">Nuovo Lavoro</p>
-            <p class="text-xs text-gray-500 mt-1">Crea un nuovo progetto</p>
-          </button>
-          <button id="btn-new-payment" class="apple-card p-6 text-center hover:shadow-lg transition">
-            <i class="fa-solid fa-credit-card text-3xl text-green-600 mb-2"></i>
-            <p class="font-bold text-gray-900">Registra Incasso</p>
-            <p class="text-xs text-gray-500 mt-1">Aggiungi un pagamento</p>
-          </button>
-          <button id="btn-new-quote" class="apple-card p-6 text-center hover:shadow-lg transition">
-            <i class="fa-solid fa-receipt text-3xl text-purple-600 mb-2"></i>
-            <p class="font-bold text-gray-900">Nuovo Preventivo</p>
-            <p class="text-xs text-gray-500 mt-1">Crea un preventivo</p>
-          </button>
-        </div>
-
-        <div class="apple-card p-6">
-          <h3 class="text-lg font-bold text-gray-900 mb-4">Lavori Aperti (Ordinati per Residuo)</h3>
-          <div id="open-jobs-list" class="space-y-3"></div>
-        </div>
-      </section>
-
-      <!-- TAB: JOBS -->
-      <section id="tab-jobs" class="tab-section hidden">
-        <div class="apple-card p-6">
-          <h3 class="text-lg font-bold text-gray-900 mb-4">Nuovo Lavoro</h3>
-          <div class="space-y-3">
-            <input type="text" id="new-job-titolo" placeholder="Titolo lavoro (es. Impianto Ospedale)" class="input-apple w-full" />
-            <input type="text" id="new-job-cliente" placeholder="Cliente" class="input-apple w-full" />
-            <input type="text" id="new-job-commessa" placeholder="Commessa/Cantiere" class="input-apple w-full" />
-            <input type="number" id="new-job-total" placeholder="Totale concordato" step="0.01" class="input-apple w-full" />
-            <button id="btn-create-job" class="btn-main w-full py-3">Crea Lavoro</button>
+<body class="bg-slate-50 text-slate-900">
+  <div id="app-shell" class="app-layout">
+    <!-- HEADER (top, su mobile e desktop) -->
+    <header class="app-header">
+      <div class="header-content">
+        <div class="header-brand">
+          <svg class="brand-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="8" y="8" width="32" height="32" rx="8" fill="url(#grad)" opacity="0.12" />
+            <path d="M14 18h20" stroke="#4F46E5" stroke-width="2.4" stroke-linecap="round" />
+            <path d="M14 26h14" stroke="#4F46E5" stroke-width="2.4" stroke-linecap="round" />
+            <path d="M14 34h8" stroke="#4F46E5" stroke-width="2.4" stroke-linecap="round" />
+            <path d="M28 31l3.5 3.5 6.5-9" stroke="#10B981" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+            <defs><linearGradient id="grad" x1="8" y1="8" x2="40" y2="40"><stop stop-color="#4F46E5" /><stop offset="1" stop-color="#1E1B4B" /></linearGradient></defs>
+          </svg>
+          <div class="header-title">
+            <p class="header-main">PrevIA Works</p>
+            <p class="header-sub" id="company-name-chip">La tua ditta</p>
           </div>
         </div>
-
-        <div class="apple-card p-6 mt-4">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="text-lg font-bold text-gray-900">Lavori</h3>
-            <div class="flex gap-2">
-              <button id="jobs-filter-open" class="px-3 py-1 rounded-full text-sm font-semibold bg-blue-100 text-blue-700">Aperti</button>
-              <button id="jobs-filter-archived" class="px-3 py-1 rounded-full text-sm font-semibold bg-gray-100 text-gray-700">Archiviati</button>
-            </div>
-          </div>
-          <div id="jobs-list" class="space-y-3"></div>
+        <div class="header-actions no-print">
+          <div id="header-logo-container" class="hidden" style="margin-right: 8px;"></div>
+          <span id="storage-pill" class="pill-warning hidden">⚠ Storage offline</span>
+          <button id="btn-header-diagnostic" type="button" class="btn-ghost btn-compact" aria-label="Diagnostica">Diagnostica</button>
         </div>
-      </section>
+      </div>
+    </header>
 
-      <!-- TAB: PAYMENT -->
-      <section id="tab-payment" class="tab-section hidden">
-        <div class="apple-card p-6">
-          <h3 class="text-lg font-bold text-gray-900 mb-4">Registra Incasso</h3>
-          <div class="space-y-3">
-            <div>
-              <label class="text-xs font-semibold text-gray-600 mb-1 block">Seleziona Lavoro <span class="text-red-500">*</span></label>
-              <select id="payment-job-select" class="input-apple w-full">
-                <option value="">-- Scegli un lavoro --</option>
-              </select>
-            </div>
-            <input type="number" id="jp-amount-payment" placeholder="Importo" step="0.01" class="input-apple w-full" />
-            <input type="text" id="jp-method" placeholder="Metodo (es. bonifico, contanti)" class="input-apple w-full" value="bonifico" />
-            <button id="btn-add-payment-payment" type="button" class="btn-main w-full py-3">Registra Incasso</button>
-          </div>
-        </div>
-      </section>
+    <!-- SIDEBAR (desktop only) -->
+    <aside id="sidebar" class="sidebar">
+      <nav class="sidebar-nav">
+        <button type="button" class="nav-btn active" data-tab="home" aria-label="Home">
+          <i class="fa-solid fa-house"></i>
+          <span>Home</span>
+        </button>
+        <button type="button" class="nav-btn" data-tab="jobs" aria-label="Lavori">
+          <i class="fa-solid fa-briefcase"></i>
+          <span>Lavori</span>
+        </button>
+        <button type="button" class="nav-btn" data-tab="quotes" aria-label="Preventivi">
+          <i class="fa-solid fa-file-invoice-dollar"></i>
+          <span>Preventivi</span>
+        </button>
+        <button type="button" class="nav-btn" data-tab="history" aria-label="Storico">
+          <i class="fa-solid fa-chart-line"></i>
+          <span>Storico</span>
+        </button>
+        <button type="button" class="nav-btn" data-tab="settings" aria-label="Impostazioni">
+          <i class="fa-solid fa-gear"></i>
+          <span>Altro</span>
+        </button>
+      </nav>
+    </aside>
 
-      <!-- TAB: JOB DETAIL -->
-      <section id="tab-job-detail" class="tab-section hidden">
-        <div class="apple-card p-6 mb-4">
-          <h3 id="job-detail-title" class="text-2xl font-bold text-gray-900">-</h3>
-          <p class="text-sm text-gray-500 mt-1">
-            Cliente: <span id="job-detail-cliente">-</span> | Commessa: <span id="job-detail-commessa">-</span>
-          </p>
-          <p class="text-sm text-gray-500">Stato: <span id="job-detail-status">-</span></p>
+    <!-- MAIN CONTENT -->
+    <main id="main-content" class="app-main">
+      <div class="content-inner">
 
-          <div class="grid grid-cols-3 gap-4 mt-4">
-            <div class="bg-blue-50 p-3 rounded-lg">
-              <p class="text-xs text-gray-500">Residuo</p>
-              <p class="text-xl font-black text-blue-600" id="job-detail-due">-</p>
-            </div>
-            <div class="bg-green-50 p-3 rounded-lg">
-              <p class="text-xs text-gray-500">Incassato</p>
-              <p class="text-xl font-black text-green-600" id="job-detail-paid">-</p>
-            </div>
-            <div class="bg-gray-100 p-3 rounded-lg">
-              <p class="text-xs text-gray-500">Totale</p>
-              <p class="text-xl font-black" id="job-detail-total">-</p>
-            </div>
-          </div>
-
-          <div class="bg-purple-50 border border-purple-200 rounded-lg p-3 mt-4">
-            <p class="text-xs text-gray-500 font-semibold">Costo stimato (Righe con prezzo)</p>
-            <p class="text-lg font-black text-purple-600" id="job-detail-cost">0,00 €</p>
-          </div>
-        </div>
-
-        <div class="apple-card p-6 mb-4">
-          <h4 class="font-bold text-gray-900 mb-3">Azioni</h4>
-          <div class="grid grid-cols-2 gap-3">
-            <button id="btn-archive-job" class="btn-soft-gray w-full py-2 text-sm"><i class="fa-solid fa-box mr-1"></i>Archivia Lavoro</button>
-            <button id="btn-delete-job-detail" class="btn-danger w-full py-2 text-sm"><i class="fa-solid fa-trash mr-1"></i>Elimina Lavoro</button>
-          </div>
-        </div>
-
-        <div class="apple-card p-6 mb-4">
-          <h4 class="font-bold text-gray-900 mb-3">Incassi</h4>
-          <div id="job-payments-list" class="space-y-2 mb-4"></div>
-          <input type="number" id="jp-amount-detail" placeholder="Nuovo incasso" step="0.01" class="input-apple w-full mb-2" />
-          <button id="btn-add-payment-detail" type="button" class="btn-main w-full py-2 text-sm">Aggiungi Incasso</button>
-        </div>
-
-        <div class="apple-card p-6 mb-4">
-          <h4 class="font-bold text-gray-900 mb-3">Righe Lavoro</h4>
-          <div id="job-lines-list" class="space-y-2 mb-4"></div>
-          
-          <div class="space-y-3 border-t border-gray-100 pt-4">
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="text-xs font-semibold text-gray-600 mb-1 block">Tipo</label>
-                <select id="jl-kind-select" class="input-apple w-full">
-                  <option value="materiale">📦 Materiale</option>
-                  <option value="lavorazione">🔧 Lavorazione</option>
-                </select>
-              </div>
-              <div>
-                <label class="text-xs font-semibold text-gray-600 mb-1 block">Quantità</label>
-                <input type="text" id="jl-qty" placeholder="1" value="1" class="input-apple w-full" />
-              </div>
-            </div>
-            <div>
-              <label class="text-xs font-semibold text-gray-600 mb-1 block">Descrizione <span class="text-red-500">*</span></label>
-              <input type="text" id="jl-desc" placeholder="Es: Cemento 25kg, Montaggio struttura..." class="input-apple w-full" />
-            </div>
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="text-xs font-semibold text-gray-600 mb-1 block">Unità</label>
-                <input type="text" id="jl-unit" placeholder="pz" value="pz" class="input-apple w-full" />
-              </div>
-              <div>
-                <label class="text-xs font-semibold text-gray-600 mb-1 block">Prezzo unitario (opz.)</label>
-                <input type="text" id="jl-price" placeholder="Es: 12,50" class="input-apple w-full" />
-              </div>
-            </div>
-            <div>
-              <label class="text-xs font-semibold text-gray-600 mb-1 block">Note (opz.)</label>
-              <input type="text" id="jl-note" placeholder="Note sulla riga..." class="input-apple w-full" />
-            </div>
-            <button id="btn-add-job-line" type="button" class="btn-main w-full py-2 text-sm">
-              <i class="fa-solid fa-plus mr-1"></i>Aggiungi Riga
+        <!-- HOME VIEW -->
+        <section id="view-home" class="view-section hidden">
+          <div class="screen-head">
+            <h1 class="screen-title">Home</h1>
+            <button id="btn-home-new" type="button" class="btn-main btn-compact">
+              <i class="fa-solid fa-plus"></i>
             </button>
           </div>
-        </div>
 
-        <div class="apple-card p-6 mb-4">
-          <h4 class="font-bold text-gray-900 mb-3">Acquisti per questa Commessa</h4>
-          <div id="job-purchases-list" class="space-y-2"></div>
-        </div>
+          <!-- KPI -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="kpi-card">
+              <p class="kpi-label">Totale da incassare</p>
+              <p id="kpi-due" class="kpi-value">0 €</p>
+            </div>
+            <div class="kpi-card">
+              <p class="kpi-label">Entrate mese</p>
+              <p id="kpi-income" class="kpi-value text-emerald-600">0 €</p>
+            </div>
+            <div class="kpi-card">
+              <p class="kpi-label">Uscite mese</p>
+              <p id="kpi-outcome" class="kpi-value text-rose-600">0 €</p>
+            </div>
+          </div>
 
-        <div class="apple-card p-6">
-          <h4 class="font-bold text-gray-900 mb-3">Note</h4>
-          <textarea id="job-detail-note" placeholder="Note sul lavoro..." class="input-apple w-full h-24 mb-2"></textarea>
-          <button id="btn-save-note" class="btn-soft-gray w-full py-2 text-sm">Salva Note</button>
-        </div>
-      </section>
+          <!-- QUICK ACTIONS -->
+          <div id="quick-actions" class="grid grid-cols-1 sm:grid-cols-3 gap-3"></div>
 
-      <!-- TAB: QUOTES -->
-      <section id="tab-quotes" class="tab-section hidden">
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <!-- LISTA PREVENTIVI -->
-          <div class="lg:col-span-1">
-            <div class="apple-card p-6 sticky top-6">
-              <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-bold text-gray-900">Preventivi</h3>
-                <button id="btn-create-new-quote" class="btn-main px-3 py-1 text-sm">
-                  <i class="fa-solid fa-plus mr-1"></i>Nuovo
+          <!-- OPEN JOBS -->
+          <div class="surface">
+            <div class="surface-head">
+              <div>
+                <h3 class="surface-title">Lavori aperti</h3>
+              </div>
+              <button id="btn-home-view-all" type="button" class="btn-ghost btn-compact" aria-label="Vedi tutti">Vedi tutti</button>
+            </div>
+            <div id="home-open-jobs" class="space-y-3"></div>
+          </div>
+        </section>
+
+        <!-- JOBS LIST VIEW -->
+        <section id="view-jobs" class="view-section hidden">
+          <div class="screen-head">
+            <h1 class="screen-title">Lavori</h1>
+            <button id="btn-jobs-new" type="button" class="btn-main btn-compact">
+              <i class="fa-solid fa-plus"></i>
+            </button>
+          </div>
+
+          <div class="surface space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label class="input-label">Cerca cliente o commessa</label>
+                <input id="jobs-search" type="search" class="input" placeholder="Es. Rossi · CANTIERE_A" />
+              </div>
+              <div class="flex items-end gap-2">
+                <div class="flex-1">
+                  <label class="input-label">Filtro</label>
+                  <div class="filter-chips" id="jobs-filters">
+                    <button type="button" class="chip active" data-filter="open">Aperti</button>
+                    <button type="button" class="chip" data-filter="closed">Chiusi</button>
+                    <button type="button" class="chip" data-filter="archived">Archiviati</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div id="jobs-list" class="space-y-2"></div>
+          </div>
+        </section>
+
+        <!-- JOB DETAIL VIEW -->
+        <section id="view-job-detail" class="view-section hidden">
+          <div class="screen-head">
+            <div class="flex items-center gap-2">
+              <button id="btn-job-back" type="button" class="btn-ghost btn-compact" aria-label="Indietro">
+                <i class="fa-solid fa-arrow-left"></i>
+              </button>
+              <h1 id="job-title" class="screen-title">-</h1>
+            </div>
+            <button id="btn-job-delete" type="button" class="btn-ghost danger btn-compact" aria-label="Elimina">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
+
+          <p class="text-sm text-slate-500" id="job-meta">-</p>
+
+          <!-- KPI -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="kpi-card">
+              <p class="kpi-label">Residuo</p>
+              <p id="job-due" class="kpi-value text-indigo-600">0 €</p>
+            </div>
+            <div class="kpi-card">
+              <p class="kpi-label">Incassato</p>
+              <p id="job-paid" class="kpi-value text-emerald-600">0 €</p>
+            </div>
+            <div class="kpi-card">
+              <p class="kpi-label">Totale</p>
+              <p id="job-total" class="kpi-value">0 €</p>
+            </div>
+          </div>
+
+          <!-- DETAIL TABS -->
+          <div class="surface">
+            <div class="segment" id="job-detail-tabs">
+              <button type="button" class="segment-btn active" data-tab="incassi">Incassi</button>
+              <button type="button" class="segment-btn" data-tab="acquisti">Acquisti</button>
+              <button type="button" class="segment-btn" data-tab="righe">Righe</button>
+              <button type="button" class="segment-btn" data-tab="note">Note</button>
+            </div>
+
+            <div id="job-incassi" class="job-panel"></div>
+            <div id="job-acquisti" class="job-panel hidden"></div>
+            <div id="job-righe" class="job-panel hidden"></div>
+            <div id="job-note" class="job-panel hidden">
+              <label class="input-label">Note interne</label>
+              <textarea id="job-note-input" class="input" rows="3" placeholder="Annota qui..."></textarea>
+              <div class="flex justify-end mt-2">
+                <button id="btn-save-job-note" type="button" class="btn-soft">Salva</button>
+              </div>
+            </div>
+
+            <div class="action-bar">
+              <button id="btn-add-payment" type="button" class="btn-main flex-1">
+                <i class="fa-solid fa-plus"></i>
+                <span>Incasso</span>
+              </button>
+              <button id="btn-add-purchase" type="button" class="btn-soft flex-1">
+                <i class="fa-solid fa-shopping-cart"></i>
+                <span>Acquisto</span>
+              </button>
+              <button id="btn-add-line" type="button" class="btn-soft flex-1">
+                <i class="fa-solid fa-list"></i>
+                <span>Riga</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- QUOTES VIEW -->
+        <section id="view-quotes" class="view-section hidden">
+          <div class="screen-head">
+            <h1 class="screen-title">Preventivi</h1>
+            <button id="btn-open-quote-wizard" type="button" class="btn-main btn-compact">
+              <i class="fa-solid fa-wand-magic-sparkles"></i>
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <!-- QUOTE LIST -->
+            <div class="surface lg:col-span-1 space-y-3">
+              <input id="quotes-search" type="search" class="input" placeholder="Cerca cliente..." />
+              <div id="quotes-list" class="space-y-2"></div>
+            </div>
+
+            <!-- QUOTE EDITOR -->
+            <div class="lg:col-span-2 space-y-4">
+              <div id="quote-empty" class="surface text-center py-8">
+                <i class="fa-solid fa-file-circle-question text-4xl text-slate-300"></i>
+                <p class="text-slate-500 mt-2">Seleziona o crea un preventivo</p>
+              </div>
+
+              <div id="quote-wizard" class="surface space-y-3 hidden">
+                <div class="flex justify-between items-start gap-3">
+                  <div>
+                    <h3 class="surface-title">Nuovo preventivo</h3>
+                    <p class="text-xs text-slate-500">Step <span id="wizard-step-label">1</span> di 2</p>
+                  </div>
+                  <button id="btn-cancel-wizard" type="button" class="btn-ghost btn-compact">
+                    <i class="fa-solid fa-xmark"></i>
+                  </button>
+                </div>
+                <div id="wizard-step-1" class="space-y-2">
+                  <label class="input-label">Cliente</label>
+                  <input id="wizard-cliente" type="text" class="input" placeholder="Inserisci cliente" autocomplete="off" />
+                  <div id="wizard-cliente-suggest" class="suggest hidden"></div>
+                  <button id="btn-wizard-next" type="button" class="btn-main w-full">Avanti</button>
+                </div>
+                <div id="wizard-step-2" class="space-y-2 hidden">
+                  <label class="input-label">Commessa / Cantiere</label>
+                  <input id="wizard-commessa" type="text" class="input" placeholder="Inserisci commessa" />
+                  <div class="flex gap-2">
+                    <button id="btn-wizard-back" type="button" class="btn-soft flex-1">Indietro</button>
+                    <button id="btn-wizard-create" type="button" class="btn-main flex-1">Crea</button>
+                  </div>
+                </div>
+              </div>
+
+              <div id="quote-editor" class="space-y-4 hidden">
+                <div class="surface">
+                  <div class="flex items-start justify-between gap-3 mb-3">
+                    <div>
+                      <p class="eyebrow">Preventivo</p>
+                      <h3 class="surface-title">#<span id="qe-number">-</span></h3>
+                      <p class="text-xs text-slate-500">Creato il <span id="qe-date">-</span></p>
+                    </div>
+                    <span id="qe-status" class="badge">DRAFT</span>
+                  </div>
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <label class="input-label">Cliente</label>
+                      <input id="qe-client" type="text" class="input" />
+                    </div>
+                    <div>
+                      <label class="input-label">Commessa</label>
+                      <input id="qe-commessa" type="text" class="input" />
+                    </div>
+                  </div>
+                  <div>
+                    <label class="input-label">Note</label>
+                    <textarea id="qe-notes" class="input" rows="2"></textarea>
+                  </div>
+                </div>
+
+                <div class="surface">
+                  <div class="flex items-center justify-between mb-3">
+                    <h4 class="surface-title">Righe</h4>
+                    <button id="btn-add-row" type="button" class="btn-soft btn-compact">
+                      <i class="fa-solid fa-plus"></i>
+                    </button>
+                  </div>
+                  <div id="quote-rows" class="space-y-2"></div>
+                </div>
+
+                <div class="surface sticky-footer">
+                  <div class="grid grid-cols-2 gap-3 text-sm mb-2">
+                    <div class="flex justify-between"><span>Imponibile</span><strong id="qt-taxable">0 €</strong></div>
+                    <div class="flex justify-between"><span>IVA</span><strong id="qt-iva">0 €</strong></div>
+                  </div>
+                  <div class="flex justify-between items-center text-lg font-bold">
+                    <span>Totale</span>
+                    <span id="qt-total" class="text-indigo-600">0 €</span>
+                  </div>
+                </div>
+
+                <div class="surface actions-grid">
+                  <button id="btn-quote-print" type="button" class="btn-soft" title="Stampa">
+                    <i class="fa-solid fa-print"></i>
+                  </button>
+                  <button id="btn-quote-duplicate" type="button" class="btn-soft" title="Duplica">
+                    <i class="fa-solid fa-copy"></i>
+                  </button>
+                  <button id="btn-quote-reset" type="button" class="btn-soft" title="Reset">
+                    <i class="fa-solid fa-refresh"></i>
+                  </button>
+                  <button id="btn-quote-delete" type="button" class="btn-ghost danger" title="Elimina">
+                    <i class="fa-solid fa-trash"></i>
+                  </button>
+                  <button id="btn-quote-lock" type="button" class="btn-main" title="Blocca">
+                    <i class="fa-solid fa-lock"></i>
+                  </button>
+                  <button id="btn-quote-unlock" type="button" class="btn-soft hidden" title="Sblocca">
+                    <i class="fa-solid fa-unlock"></i>
+                  </button>
+                  <button id="btn-quote-confirm" type="button" class="btn-main col-span-2" title="Converti a lavoro">
+                    Converti in lavoro
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- HISTORY VIEW -->
+        <section id="view-history" class="view-section hidden">
+          <h1 class="screen-title">Storico acquisti</h1>
+
+          <div class="surface space-y-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              <div>
+                <label class="input-label">Prodotto</label>
+                <input id="history-search" type="search" class="input" placeholder="Cavo, quadro..." />
+              </div>
+              <div>
+                <label class="input-label">Fornitore</label>
+                <input id="history-supplier" type="search" class="input" />
+              </div>
+              <div>
+                <label class="input-label">Anno</label>
+                <input id="history-year" type="number" class="input" placeholder="2024" min="2020" max="2099" />
+              </div>
+            </div>
+            <div class="flex justify-end">
+              <button id="btn-history-search" type="button" class="btn-main">Cerca</button>
+            </div>
+            <div id="history-results" class="space-y-3"></div>
+          </div>
+        </section>
+
+        <!-- SETTINGS VIEW -->
+        <section id="view-settings" class="view-section hidden">
+          <h1 class="screen-title">Impostazioni</h1>
+
+          <div class="surface space-y-4">
+            <div>
+              <h3 class="surface-title">Dati azienda</h3>
+              <div class="mt-3">
+                <label class="input-label">Nome</label>
+                <input id="company-name-input" type="text" class="input" />
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                <div>
+                  <label class="input-label">Indirizzo</label>
+                  <input id="company-address" type="text" class="input" />
+                </div>
+                <div>
+                  <label class="input-label">P.IVA</label>
+                  <input id="company-piva" type="text" class="input" />
+                </div>
+                <div>
+                  <label class="input-label">Telefono</label>
+                  <input id="company-phone" type="text" class="input" />
+                </div>
+                <div>
+                  <label class="input-label">Email</label>
+                  <input id="company-email" type="email" class="input" />
+                </div>
+              </div>
+              <div class="flex flex-wrap gap-2 mt-3">
+                <button id="btn-logo-upload" type="button" class="btn-soft" title="Upload logo">
+                  <i class="fa-solid fa-image mr-2"></i>Logo
                 </button>
-              </div>
-              
-              <input 
-                type="text" 
-                id="quote-search" 
-                placeholder="Cerca cliente o commessa..." 
-                class="input-apple w-full mb-4" 
-              />
-
-              <div id="quotes-list" class="space-y-2 max-h-[600px] overflow-y-auto"></div>
-            </div>
-          </div>
-
-          <!-- EDITOR PREVENTIVO -->
-          <div class="lg:col-span-2">
-            <div id="quote-editor-empty" class="apple-card p-12 text-center">
-              <i class="fa-solid fa-file-invoice text-6xl text-gray-300 mb-4"></i>
-              <p class="text-gray-400 text-lg font-semibold">Seleziona o crea un preventivo</p>
-            </div>
-
-            <!-- WIZARD CREA PREVENTIVO -->
-            <div id="quote-wizard" class="space-y-4 hidden">
-              <div class="apple-card p-6">
-                <div class="flex justify-between items-center mb-6">
-                  <h3 class="text-xl font-bold text-gray-900">
-                    <i class="fa-solid fa-wand-magic-sparkles mr-2 text-blue-600"></i>Nuovo Preventivo
-                  </h3>
-                  <span id="wiz-step-indicator" class="text-sm font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">Passo 1/2</span>
-                </div>
-                
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6 text-sm text-gray-700">
-                  <p class="mb-2"><strong>Guida:</strong> Inserisci Cliente, poi Commessa/Cantiere.</p>
-                  <p class="text-xs text-gray-600">Esempio: <em>Rossi Srl</em> / <em>CANTIERE_A</em></p>
-                </div>
-
-                <!-- STEP 1: CLIENTE -->
-                <div id="wizard-step-1" class="space-y-4">
-                  <div>
-                    <label class="text-sm font-semibold text-gray-700 mb-2 block">Cliente <span class="text-red-500">*</span></label>
-                    <div class="relative">
-                      <input 
-                        type="text" 
-                        id="wiz-cliente" 
-                        placeholder="Inserisci nome cliente (es: Rossi Srl)" 
-                        class="input-apple w-full text-base" 
-                        autocomplete="off"
-                      />
-                      <div id="wiz-cliente-autocomplete" class="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-lg mt-1 max-h-40 overflow-y-auto hidden z-10"></div>
-                    </div>
-                    <p id="wiz-cliente-error" class="text-xs text-red-500 mt-2 hidden">Campo obbligatorio</p>
-                  </div>
-
-                  <div class="space-y-3 pt-4">
-                    <button id="btn-wiz-next-1" class="w-full btn-main py-4 text-base font-bold rounded-lg flex items-center justify-center gap-2">
-                      Avanti <i class="fa-solid fa-arrow-right"></i>
-                    </button>
-                    <button id="btn-wiz-cancel-1" class="w-full btn-soft-gray py-3 text-base font-semibold rounded-lg flex items-center justify-center gap-2">
-                      <i class="fa-solid fa-times"></i>Annulla
-                    </button>
-                  </div>
-                </div>
-
-                <!-- STEP 2: COMMESSA -->
-                <div id="wizard-step-2" class="space-y-4 hidden">
-                  <div>
-                    <label class="text-sm font-semibold text-gray-700 mb-2 block">Cliente</label>
-                    <div id="wiz-cliente-display" class="w-full bg-gray-50 border border-gray-200 text-gray-700 px-4 py-3 rounded-lg text-base font-semibold">-</div>
-                  </div>
-                  <div>
-                    <label class="text-sm font-semibold text-gray-700 mb-2 block">Commessa / Cantiere <span class="text-red-500">*</span></label>
-                    <input 
-                      type="text" 
-                      id="wiz-commessa" 
-                      placeholder="Inserisci commessa/cantiere (es: CANTIERE_A)" 
-                      class="input-apple w-full text-base" 
-                    />
-                    <p id="wiz-commessa-error" class="text-xs text-red-500 mt-2 hidden">Campo obbligatorio</p>
-                  </div>
-
-                  <div class="space-y-3 pt-4">
-                    <button id="btn-wiz-create" class="w-full btn-main py-4 text-base font-bold rounded-lg flex items-center justify-center gap-2">
-                      <i class="fa-solid fa-check"></i>Crea Preventivo
-                    </button>
-                    <div class="grid grid-cols-2 gap-3">
-                      <button id="btn-wiz-back-2" class="w-full btn-soft-gray py-3 text-base font-semibold rounded-lg flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-arrow-left"></i>Indietro
-                      </button>
-                      <button id="btn-wiz-cancel-2" class="w-full btn-soft-gray py-3 text-base font-semibold rounded-lg flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-times"></i>Annulla
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div id="quote-editor" class="space-y-4 hidden">
-              <!-- TESTATA -->
-              <div class="apple-card p-6">
-                <div class="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 class="text-2xl font-bold text-gray-900">
-                      Preventivo n. <span id="qe-number">-</span>
-                    </h3>
-                    <p class="text-sm text-gray-500 mt-1">Creato il <span id="qe-date">-</span></p>
-                  </div>
-                  <span id="qe-status-badge" class="px-3 py-1 rounded-full text-sm font-semibold">-</span>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div>
-                    <label class="text-xs font-semibold text-gray-600 mb-1 block">Cliente</label>
-                    <input 
-                      type="text" 
-                      id="qe-cliente" 
-                      placeholder="Nome cliente" 
-                      class="input-apple w-full" 
-                    />
-                  </div>
-                  <div>
-                    <label class="text-xs font-semibold text-gray-600 mb-1 block">Commessa</label>
-                    <input 
-                      type="text" 
-                      id="qe-commessa" 
-                      placeholder="CODICE_COMMESSA" 
-                      class="input-apple w-full" 
-                    />
-                  </div>
-                </div>
-
-                <div class="mt-3">
-                  <label class="text-xs font-semibold text-gray-600 mb-1 block">Note/Condizioni</label>
-                  <textarea 
-                    id="qe-notes" 
-                    placeholder="Condizioni di pagamento, note, ecc..." 
-                    class="input-apple w-full h-20 resize-none"
-                  ></textarea>
-                </div>
-              </div>
-
-              <!-- RIGHE -->
-              <div class="apple-card p-6">
-                <h4 class="font-bold text-gray-900 mb-4">Righe Preventivo</h4>
-                
-                <div id="qe-righe-list" class="space-y-3 mb-4"></div>
-
-                <div id="qe-add-riga-form" class="border-t border-gray-100 pt-4 space-y-3">
-                  <input 
-                    type="text" 
-                    id="qe-new-desc" 
-                    placeholder="Descrizione articolo/servizio" 
-                    class="input-apple w-full" 
-                  />
-                  <div class="grid grid-cols-2 gap-3">
-                    <input 
-                      type="text" 
-                      id="qe-new-qty" 
-                      placeholder="Quantità" 
-                      value="1" 
-                      class="input-apple" 
-                    />
-                    <input 
-                      type="text" 
-                      id="qe-new-price" 
-                      placeholder="Prezzo (es: 12,50)" 
-                      class="input-apple" 
-                    />
-                  </div>
-                  <div class="grid grid-cols-2 gap-3">
-                    <input 
-                      type="text" 
-                      id="qe-new-sconto" 
-                      placeholder="Sconto % (es: 5)" 
-                      value="0" 
-                      class="input-apple" 
-                    />
-                    <input 
-                      type="text" 
-                      id="qe-new-iva" 
-                      placeholder="IVA % (es: 22)" 
-                      value="22" 
-                      class="input-apple" 
-                    />
-                  </div>
-                  <button id="btn-qe-add-riga" type="button" class="btn-soft-gray w-full py-2">
-                    <i class="fa-solid fa-plus mr-1"></i>Aggiungi Riga
-                  </button>
-                </div>
-              </div>
-
-              <!-- TOTALI -->
-              <div class="apple-card p-6">
-                <div class="space-y-3">
-                  <div class="flex justify-between text-lg">
-                    <span class="font-semibold text-gray-700">Imponibile:</span>
-                    <span id="qe-taxable" class="font-bold text-gray-900">0,00 €</span>
-                  </div>
-                  <div class="flex justify-between text-lg">
-                    <span class="font-semibold text-gray-700">IVA:</span>
-                    <span id="qe-vat" class="font-bold text-gray-900">0,00 €</span>
-                  </div>
-                  <div class="flex justify-between text-2xl border-t border-gray-200 pt-3">
-                    <span class="font-bold text-gray-900">TOTALE:</span>
-                    <span id="qe-total" class="font-black text-blue-600">0,00 €</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- AZIONI -->
-              <div class="apple-card p-6">
-                <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
-                  <button id="btn-qe-print" class="btn-soft-gray py-3 flex items-center justify-center">
-                    <i class="fa-solid fa-print mr-2"></i>Stampa
-                  </button>
-                  <button id="btn-qe-duplicate" class="btn-soft-blue py-3 flex items-center justify-center">
-                    <i class="fa-solid fa-copy mr-2"></i>Duplica
-                  </button>
-                  <button id="btn-qe-reset" class="btn-soft-gray py-3 flex items-center justify-center">
-                    <i class="fa-solid fa-broom mr-2"></i>Reset
-                  </button>
-                  <button id="btn-qe-delete" class="btn-danger py-3 flex items-center justify-center">
-                    <i class="fa-solid fa-trash mr-2"></i>Elimina
-                  </button>
-                  <button id="btn-qe-lock" class="btn-main py-3 flex items-center justify-center">
-                    <i class="fa-solid fa-lock mr-2"></i>Blocca
-                  </button>
-                  <button id="btn-qe-unlock" class="btn-soft-gray py-3 flex items-center justify-center hidden">
-                    <i class="fa-solid fa-unlock mr-2"></i>Sblocca
-                  </button>
-                  <button id="btn-qe-confirm-job" class="btn-main py-3 flex items-center justify-center md:col-span-2">
-                    <i class="fa-solid fa-check-double mr-2"></i>Conferma come Lavoro
-                  </button>
-                </div>
+                <button id="btn-save-company" type="button" class="btn-main">Salva</button>
               </div>
             </div>
           </div>
-        </div>
-      </section>
 
-      <!-- TAB: PRODUCTS -->
-      <section id="tab-products" class="tab-section hidden">
-        <div class="apple-card p-6 mb-4">
-          <h3 class="text-lg font-bold text-gray-900 mb-4">Storico Prodotti</h3>
-          <div class="space-y-3 mb-4">
-            <input type="text" id="ph-fornitore" placeholder="Filtro fornitore (opzionale)" class="input-apple w-full" />
-            <input type="number" id="ph-anno" placeholder="Anno (opzionale)" min="2020" max="2099" class="input-apple w-full" />
-            <button id="btn-search-products" class="btn-main w-full py-3">Cerca Prodotti</button>
+          <div class="surface space-y-3 mt-4">
+            <h3 class="surface-title">Backup & Dati</h3>
+            <div class="flex flex-wrap gap-2">
+              <button id="btn-backup" type="button" class="btn-soft">
+                <i class="fa-solid fa-download"></i>
+                <span>Backup</span>
+              </button>
+              <label class="btn-soft cursor-pointer" for="file-import">
+                <i class="fa-solid fa-upload"></i>
+                <span>Importa</span>
+              </label>
+              <button id="btn-export-job" type="button" class="btn-soft">
+                <i class="fa-solid fa-box"></i>
+                <span>Esporta lavoro</span>
+              </button>
+              <button id="btn-diagnostic" type="button" class="btn-soft">
+                <i class="fa-solid fa-stethoscope"></i>
+                <span>Diagnostica</span>
+              </button>
+            </div>
           </div>
+
+          <div class="surface space-y-3 mt-4">
+            <h3 class="surface-title text-rose-600">Pericolo</h3>
+            <p class="text-sm text-slate-500">Digita RESET per azzerare tutto.</p>
+            <button id="btn-reset-all" type="button" class="btn-danger">Reset totale</button>
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+    <!-- BOTTOM NAV (mobile only) -->
+    <nav id="bottom-nav" class="bottom-nav">
+      <button type="button" class="nav-btn" data-tab="home" aria-label="Home"><i class="fa-solid fa-house"></i></button>
+      <button type="button" class="nav-btn" data-tab="jobs" aria-label="Lavori"><i class="fa-solid fa-briefcase"></i></button>
+      <button type="button" class="nav-btn" data-tab="quotes" aria-label="Preventivi"><i class="fa-solid fa-file-invoice-dollar"></i></button>
+      <button type="button" class="nav-btn" data-tab="history" aria-label="Storico"><i class="fa-solid fa-chart-line"></i></button>
+      <button type="button" class="nav-btn" data-tab="settings" aria-label="Altro"><i class="fa-solid fa-gear"></i></button>
+    </nav>
+
+    <!-- SHEET -->
+    <div id="sheet-overlay" class="sheet hidden" aria-hidden="true">
+      <div class="sheet-backdrop"></div>
+      <div class="sheet-panel">
+        <div class="sheet-header">
+          <div>
+            <p class="eyebrow" id="sheet-subtitle">Azioni</p>
+            <h3 id="sheet-title" class="section-title">Titolo</h3>
+          </div>
+          <button id="sheet-close" type="button" class="btn-ghost btn-compact" aria-label="Chiudi"><i class="fa-solid fa-xmark"></i></button>
         </div>
-
-        <div class="apple-card p-6">
-          <div id="ph-results"></div>
+        <div id="sheet-body" class="sheet-body"></div>
+        <div class="sheet-footer">
+          <button id="sheet-secondary" type="button" class="btn-soft">Annulla</button>
+          <button id="sheet-primary" type="button" class="btn-main">Salva</button>
         </div>
-      </section>
-
-    </div>
-  </main>
-
-  <!-- PRINT CONTAINER (hidden) -->
-  <div id="print-root" class="hidden"></div>
-
-  <!-- CONFIRM MODAL -->
-  <div id="confirm-modal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg p-6 w-[90%] max-w-md shadow-xl">
-      <h3 id="confirm-title" class="text-lg font-bold text-gray-900 mb-2">Conferma</h3>
-      <p id="confirm-text" class="text-sm text-gray-600 mb-4">Sei sicuro?</p>
-      <div class="grid grid-cols-2 gap-3">
-        <button id="confirm-cancel" class="btn-soft-gray w-full py-2">Annulla</button>
-        <button id="confirm-ok" class="btn-danger w-full py-2">Elimina</button>
       </div>
     </div>
+
+    <!-- TOAST -->
+    <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   </div>
 
-  <!-- TOAST -->
-  <div id="app-toast" class="hidden fixed bottom-6 right-6 bg-gray-900 text-white px-4 py-2 rounded-lg shadow-lg z-50"></div>
+  <!-- PRINT ROOT -->
+  <div id="print-root" class="hidden"></div>
+
+  <!-- FILE INPUTS (hidden) -->
+  <input id="file-import" type="file" accept="application/json" class="hidden no-print" hidden />
+  <input id="logo-file-input" type="file" accept="image/*" class="hidden no-print" hidden />
 
   <script src="./app.js"></script>
 </body>
