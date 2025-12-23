@@ -157,6 +157,7 @@ function loadState() {
       fornitore: safeTrim(pl.fornitore),
       prodotto: safeTrim(pl.prodotto),
       qty: Number(pl.qty) || 1,
+      unit: safeTrim(pl.unit) || "pz",
       unitPrice: Number(pl.unitPrice) || 0,
       commessa: safeUpper(pl.commessa),
       note: safeTrim(pl.note),
@@ -314,12 +315,13 @@ function createJobPayment({ jobId, amount, method, note, dateISO }) {
   return jp;
 }
 
-function createPurchaseLine({ fornitore, prodotto, qty, unitPrice, commessa, note, dateISO }) {
+function createPurchaseLine({ fornitore, prodotto, qty, unit, unitPrice, commessa, note, dateISO }) {
   const line = {
     id: Date.now(),
     fornitore: safeTrim(fornitore),
     prodotto: safeTrim(prodotto),
     qty: parseItalianFloat(qty || 1),
+    unit: safeTrim(unit) || "pz",
     unitPrice: parseItalianFloat(unitPrice || 0),
     commessa: safeUpper(commessa),
     note: safeTrim(note),
@@ -780,11 +782,15 @@ function getProductHistory(filters = {}) {
   if (filters.prodotto) lines = lines.filter(l => safeUpper(l.prodotto).includes(safeUpper(filters.prodotto)));
   if (filters.fornitore) lines = lines.filter(l => safeUpper(l.fornitore).includes(safeUpper(filters.fornitore)));
   if (filters.year) lines = lines.filter(l => new Date(l.dateISO).getFullYear() === Number(filters.year));
+  if (filters.month && filters.month !== 'all') lines = lines.filter(l => (new Date(l.dateISO).getMonth() + 1) === Number(filters.month));
+  if (filters.commessa) lines = lines.filter(l => safeUpper(l.commessa).includes(safeUpper(filters.commessa)));
+  if (filters.order === 'price') return lines.sort((a, b) => (a.unitPrice - b.unitPrice));
   return lines.sort((a, b) => new Date(b.dateISO) - new Date(a.dateISO));
 }
 
-function getProductStats(prodotto) {
-  const lines = state.purchaseLines.filter(l => safeUpper(l.prodotto).includes(safeUpper(prodotto)));
+function getProductStats(prodotto, year) {
+  let lines = state.purchaseLines.filter(l => safeUpper(l.prodotto).includes(safeUpper(prodotto)));
+  if (year) lines = lines.filter(l => new Date(l.dateISO).getFullYear() === Number(year));
   if (!lines.length) return { minPrice: 0, maxPrice: 0, avgPrice: 0, lastPrice: 0, qty: 0, count: 0 };
   const prices = lines.map(l => l.unitPrice);
   const sum = prices.reduce((a, b) => a + b, 0);
@@ -802,15 +808,75 @@ function renderHistory() {
   const q = safeTrim($("#history-search")?.value || "");
   const forn = safeTrim($("#history-supplier")?.value || "");
   const year = safeTrim($("#history-year")?.value || "");
-  const lines = getProductHistory({ prodotto: q, fornitore: forn, year });
+  const month = $("#history-month")?.value || 'all';
+  const commessa = safeTrim($("#history-commessa")?.value || "");
+  const order = $("#history-order")?.value || 'date-desc';
+  const lines = getProductHistory({ prodotto: q, fornitore: forn, year, month, commessa, order });
   const wrap = $("#history-results");
   if (!wrap) return;
   if (!lines.length) { wrap.innerHTML = '<p class="text-sm text-slate-500">Nessun risultato.</p>'; return; }
   const byProd = lines.reduce((acc, l) => { const key = safeUpper(l.prodotto); acc[key] = acc[key] || []; acc[key].push(l); return acc; }, {});
   wrap.innerHTML = Object.entries(byProd).map(([prod, arr]) => {
-    const s = getProductStats(prod);
-    return `<div class="surface space-y-2"><div class="flex items-center justify-between"><div><p class="surface-title">${escapeHTML(prod)}</p><p class="text-xs text-slate-500">${s.count} acquisti · ${s.qty} pezzi</p></div><div class="text-right text-sm"><div>Min ${formatMoney.format(s.minPrice)}</div><div>Med ${formatMoney.format(s.avgPrice)}</div><div>Max ${formatMoney.format(s.maxPrice)}</div></div></div>${arr.map(l => `<div class="list-row"><div class="left"><div class="title">${escapeHTML(l.fornitore)}</div><div class="meta">${fmtShortDate(l.dateISO)}</div></div><div class="text-right"><div class="title">${formatMoney.format(l.qty * l.unitPrice)}</div><div class="meta">${l.qty} @ ${formatMoney.format(l.unitPrice)}</div></div></div>`).join("")}</div>`;
+    const s = getProductStats(prod, year);
+    return `<div class="surface space-y-2">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="surface-title">${escapeHTML(prod)}</p>
+          <p class="text-xs text-slate-500">${s.count} acquisti · ${s.qty} unità</p>
+        </div>
+        <div class="text-right text-sm">
+          <div>Ultimo ${formatMoney.format(s.lastPrice)}</div>
+          <div>Min ${formatMoney.format(s.minPrice)}</div>
+          <div>Med ${formatMoney.format(s.avgPrice)}</div>
+          <div>Max ${formatMoney.format(s.maxPrice)}</div>
+        </div>
+      </div>
+      ${arr.map(l => `<div class="list-row">
+        <div class="left">
+          <div class="title">${escapeHTML(l.fornitore)}</div>
+          <div class="meta">${fmtShortDate(l.dateISO)} · Commessa ${escapeHTML(l.commessa || '-')}</div>
+        </div>
+        <div class="text-right">
+          <div class="title">${formatMoney.format(l.qty * l.unitPrice)}</div>
+          <div class="meta">${l.qty} ${escapeHTML(l.unit || 'pz')} @ ${formatMoney.format(l.unitPrice)}</div>
+        </div>
+      </div>`).join("")}
+    </div>`;
   }).join("");
+}
+
+function exportPurchasesCSV(lines) {
+  const header = ["dateISO","fornitore","prodotto","qty","unita","prezzoUnit","totale","commessa","note"]; 
+  const rows = lines.map(l => [
+    l.dateISO,
+    l.fornitore,
+    l.prodotto,
+    l.qty,
+    l.unit || 'pz',
+    l.unitPrice,
+    Math.round(l.qty * l.unitPrice * 100)/100,
+    l.commessa || '',
+    (l.note || '').replace(/\n/g,' ')
+  ]);
+  const csv = [header.join(','), ...rows.map(r => r.map(v => typeof v === 'string' && v.includes(',') ? `"${v.replace(/"/g,'""')}"` : v).join(','))].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  const now = new Date();
+  a.href = URL.createObjectURL(blob);
+  a.download = `acquisti_${now.getFullYear()}_${String(now.getMonth()+1).padStart(2,'0')}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function exportPurchasesJSON(lines) {
+  const payload = { purchaseLines: lines };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  const now = new Date();
+  a.href = URL.createObjectURL(blob);
+  a.download = `acquisti_${now.getFullYear()}_${String(now.getMonth()+1).padStart(2,'0')}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
 }
 
 // ---------------------------------------------------------------------------
@@ -1270,6 +1336,103 @@ function initEvents() {
   $("#btn-quote-duplicate")?.addEventListener("click", () => { const copy = duplicateQuote(ui.activeQuoteId); if (copy) { persist(); renderQuotes(); showToast("Duplicato"); } });
   $("#btn-quote-confirm")?.addEventListener("click", () => { const job = confirmQuoteAsJob(ui.activeQuoteId); if (job) { persist(); renderAll(); showToast("Convertito in lavoro"); } });
   $("#btn-history-search")?.addEventListener("click", renderHistory);
+  // History: default date and supplier autocomplete
+  $("#history-new-date")?.setAttribute("value", toISODateOnly());
+  $("#history-new-supplier")?.addEventListener("input", e => {
+    const val = safeTrim(e.target.value);
+    const suggest = $("#history-supplier-suggest");
+    if (!suggest) return;
+    const items = state.anagrafiche.fornitori.filter(f => safeUpper(f).includes(safeUpper(val))).slice(0, 6);
+    if (!val || !items.length) { suggest.classList.add("hidden"); suggest.innerHTML = ""; return; }
+    suggest.innerHTML = items.map(f => `<button type="button" data-sup="${escapeHTML(f)}">${escapeHTML(f)}</button>`).join("");
+    suggest.classList.remove("hidden");
+    suggest.querySelectorAll("button").forEach(btn => btn.addEventListener("click", () => { $("#history-new-supplier").value = btn.dataset.sup; suggest.classList.add("hidden"); }));
+  });
+  // History: live total compute
+  const recomputeTotal = () => {
+    const qty = parseImporto($("#history-new-qty")?.value || 0);
+    const up = parseImporto($("#history-new-unitprice")?.value || 0);
+    const tot = Number.isFinite(qty) && Number.isFinite(up) ? Math.round(qty * up * 100)/100 : 0;
+    $("#history-new-total") && ($("#history-new-total").value = tot ? formatMoney.format(tot) : "0 €");
+  };
+  $("#history-new-qty")?.addEventListener("input", recomputeTotal);
+  $("#history-new-unitprice")?.addEventListener("input", recomputeTotal);
+  // History: save new purchase
+  $("#btn-history-save-purchase")?.addEventListener("click", () => {
+    const line = createPurchaseLine({
+      fornitore: $("#history-new-supplier")?.value,
+      prodotto: $("#history-new-product")?.value,
+      qty: $("#history-new-qty")?.value,
+      unit: $("#history-new-unit")?.value,
+      unitPrice: $("#history-new-unitprice")?.value,
+      commessa: $("#history-new-commessa")?.value,
+      note: $("#history-new-note")?.value,
+      dateISO: `${$("#history-new-date")?.value || toISODateOnly()}T12:00:00Z`,
+    });
+    if (!line) { showToast("Compila campi obbligatori"); return; }
+    persist();
+    renderHistory();
+    showToast("Acquisto salvato");
+    $("#history-new-product").value = "";
+    $("#history-new-qty").value = "1";
+    $("#history-new-unit").value = "pz";
+    $("#history-new-unitprice").value = "0";
+    $("#history-new-total").value = "0 €";
+    $("#history-new-note").value = "";
+  });
+  // History: export filtered results
+  $("#btn-history-export-csv")?.addEventListener("click", () => {
+    const q = safeTrim($("#history-search")?.value || "");
+    const forn = safeTrim($("#history-supplier")?.value || "");
+    const year = safeTrim($("#history-year")?.value || "");
+    const month = $("#history-month")?.value || 'all';
+    const commessa = safeTrim($("#history-commessa")?.value || "");
+    const order = $("#history-order")?.value || 'date-desc';
+    const lines = getProductHistory({ prodotto: q, fornitore: forn, year, month, commessa, order });
+    exportPurchasesCSV(lines);
+  });
+  $("#btn-history-export-json")?.addEventListener("click", () => {
+    const q = safeTrim($("#history-search")?.value || "");
+    const forn = safeTrim($("#history-supplier")?.value || "");
+    const year = safeTrim($("#history-year")?.value || "");
+    const month = $("#history-month")?.value || 'all';
+    const commessa = safeTrim($("#history-commessa")?.value || "");
+    const order = $("#history-order")?.value || 'date-desc';
+    const lines = getProductHistory({ prodotto: q, fornitore: forn, year, month, commessa, order });
+    exportPurchasesJSON(lines);
+  });
+  // History: import purchases
+  $("#purchase-import")?.addEventListener("change", e => {
+    const file = e.target.files?.[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(reader.result);
+        const incoming = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.purchaseLines) ? parsed.purchaseLines : [];
+        if (!incoming.length) throw new Error("Formato non valido");
+        let duplicates = 0, added = 0;
+        incoming.forEach(pl => {
+          const dateISO = pl.dateISO ? String(pl.dateISO) : `${toISODateOnly()}T12:00:00Z`;
+          const fornitore = safeTrim(pl.fornitore);
+          const prodotto = safeTrim(pl.prodotto);
+          const qty = parseItalianFloat(pl.qty || 1);
+          const unitPrice = parseItalianFloat(pl.unitPrice || 0);
+          const tot = Math.round(qty * unitPrice * 100)/100;
+          const exists = state.purchaseLines.some(l => l.dateISO === dateISO && safeUpper(l.fornitore) === safeUpper(fornitore) && safeUpper(l.prodotto) === safeUpper(prodotto) && Math.round(l.qty * l.unitPrice * 100)/100 === tot);
+          if (exists) { duplicates++; return; }
+          const line = createPurchaseLine({ fornitore, prodotto, qty, unit: safeTrim(pl.unit) || 'pz', unitPrice, commessa: pl.commessa, note: pl.note, dateISO });
+          if (line) added++;
+        });
+        persist();
+        renderHistory();
+        showToast(`${added} importati · ${duplicates} duplicati ignorati`);
+      } catch {
+        showToast("File non valido");
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  });
   $("#btn-save-company")?.addEventListener("click", updateCompanyFromInputs);
   $("#btn-backup")?.addEventListener("click", () => downloadBackup());
   $("#file-import")?.addEventListener("change", e => { const file = e.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { try { const parsed = JSON.parse(reader.result); if (!parsed?.state) throw new Error(); state = loadState(); state = parsed.state ? { ...defaultState(), ...parsed.state } : state; persist(); renderAll(); showToast("Import completato"); } catch { showToast("File non valido"); } }; reader.readAsText(file); e.target.value = ""; });
@@ -1334,6 +1497,51 @@ function createQuoteFromWizardFlow() {
 // ---------------------------------------------------------------------------
 function showDiagnosticReport() {
   const now = new Date();
+  // Coerenza e controlli rapidi
+  const quotesTotalsMismatches = [];
+  state.quotes.forEach(q => {
+    const righe = Array.isArray(q.righe) ? q.righe : [];
+    const calc = righe.reduce((acc, r) => {
+      const qty = parseItalianFloat(r.qty || 0);
+      const price = parseItalianFloat(r.unitPrice || 0);
+      const sconto = parseItalianFloat(r.sconto || 0);
+      const iva = parseItalianFloat(r.iva || 0);
+      const sub = qty * price * (1 - sconto / 100);
+      acc.taxable += sub;
+      acc.vat += sub * (iva / 100);
+      return acc;
+    }, { taxable: 0, vat: 0 });
+    const exp = {
+      taxable: Math.round(calc.taxable * 100) / 100,
+      vat: Math.round(calc.vat * 100) / 100,
+      total: Math.round((calc.taxable + calc.vat) * 100) / 100,
+    };
+    if (Math.abs((q.totals?.taxable || 0) - exp.taxable) > 0.01 || Math.abs((q.totals?.vat || 0) - exp.vat) > 0.01 || Math.abs((q.totals?.total || 0) - exp.total) > 0.01) {
+      quotesTotalsMismatches.push({ id: q.id, number: q.number, stored: q.totals, expected: exp });
+    }
+  });
+
+  const jobsResiduals = [];
+  state.jobs.forEach(j => {
+    const paid = getJobPaid(j.id);
+    const due = Math.round((j.agreedTotal - paid) * 100) / 100;
+    if (!Number.isFinite(due) || Math.abs(due) > j.agreedTotal * 10 || due < -0.01) {
+      jobsResiduals.push({ id: j.id, titolo: j.titolo, agreedTotal: j.agreedTotal, paid, due });
+    }
+  });
+
+  const invalidNumbers = [];
+  state.jobPayments.forEach(p => { if (!Number.isFinite(p.amount) || p.amount <= 0) invalidNumbers.push({ entity: 'jobPayment', id: p.id, amount: p.amount }); });
+  state.jobLines.forEach(l => { if (!Number.isFinite(l.qty) || !Number.isFinite(l.unitPrice) || l.qty < 0 || l.unitPrice < 0) invalidNumbers.push({ entity: 'jobLine', id: l.id, qty: l.qty, unitPrice: l.unitPrice }); });
+  state.movimenti.forEach(m => { if (!Number.isFinite(m.importo) || m.importo < 0) invalidNumbers.push({ entity: 'movimento', id: m.id, importo: m.importo, tipo: m.tipo }); });
+  const purchaseTotalsMismatch = [];
+  state.purchaseLines.forEach(l => {
+    const total = Math.round(l.qty * l.unitPrice * 100) / 100;
+    if (!Number.isFinite(total) || total < 0) purchaseTotalsMismatch.push({ id: l.id, dateISO: l.dateISO, prodotto: l.prodotto, fornitore: l.fornitore, qty: l.qty, unitPrice: l.unitPrice, computedTotal: total });
+  });
+
+  const jobLinesByJob = state.jobs.reduce((acc, j) => { acc[j.id] = state.jobLines.filter(l => l.jobId === j.id).length; return acc; }, {});
+
   const report = {
     appVersion: APP_VERSION || state.version || "n/a",
     timestamp: now.toISOString(),
@@ -1370,6 +1578,14 @@ function showDiagnosticReport() {
       activeJobId: ui.activeJobId,
       activeQuoteId: ui.activeQuoteId,
       activeTab: ui.activeTab,
+    },
+    checks: {
+      jobLinesPersisted: state.jobLines.length > 0 ? `OK (${state.jobLines.length})` : "EMPTY",
+      jobLinesPerJob: jobLinesByJob,
+      quotesTotalsMismatches,
+      jobsResiduals,
+      invalidNumbers,
+      purchaseTotalsMismatch,
     },
     errors: errorLog.slice(-20),
   };
