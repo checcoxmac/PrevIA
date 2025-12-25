@@ -1296,7 +1296,12 @@ function renderAll() {
   renderNav();
   renderHome();
   renderJobs();
-  renderJobDetailTabs();
+  if (ui.activeJobId) {
+    // Aggiorna immediatamente i KPI del dettaglio lavoro (incassi/acconti inclusi)
+    renderJobDetail();
+  } else {
+    renderJobDetailTabs();
+  }
   renderQuotes();
   renderHistory();
   renderSettings();

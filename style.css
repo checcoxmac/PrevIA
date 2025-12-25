@@ -114,8 +114,8 @@ body {
 }
 
 .brand-icon {
-  width: 32px;
-  height: 32px;
+  width: 42px;
+  height: 42px;
   flex-shrink: 0;
 }
 
@@ -126,13 +126,22 @@ body {
 }
 
 .header-main {
-  font: var(--text-label);
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: 0.4px;
   color: var(--text-primary);
 }
 
 .header-sub {
   font: var(--text-meta);
   color: var(--text-muted);
+}
+
+.brand-wordmark {
+  background: linear-gradient(90deg, #4f46e5, #7c6ff9, #10b981);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .header-actions {
@@ -938,6 +947,10 @@ select:focus {
   display: none;
 }
 
+@page {
+  margin: 12mm;
+}
+
 /* Print-only rules: show ONLY #print-root, hide everything else */
 @media print {
   /* Nascondi tutta l'app, mostra solo il print-root */
@@ -946,6 +959,10 @@ select:focus {
     display: block !important;
     position: static !important;
     visibility: visible !important;
+    width: 100% !important;
+    max-width: 900px !important;
+    margin: 0 auto !important;
+    padding: 0 12px !important;
   }
 
   /* Extra safety: nascondi input file, label associate e tutto ciò che è .no-print */
@@ -956,10 +973,18 @@ select:focus {
     display: none !important;
   }
 
-  /* Fondo neutro e riduzione ombre per la stampa */
-  body { background: #ffffff !important; }
+  /* Fondo neutro, colori preservati e riduzione ombre per la stampa */
+  html, body {
+    background: #ffffff !important;
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
   .surface { box-shadow: none !important; border: 1px solid #cccccc !important; }
   .content-inner { padding: 0 !important; }
+  #print-root * { break-inside: avoid; }
 }
 .input {
   width: 100%;
@@ -1221,6 +1246,10 @@ select:focus {
 
 .text-center {
   text-align: center;
+}
+
+.hidden {
+  display: none !important;
 }
 
 .bg-slate-50 {
