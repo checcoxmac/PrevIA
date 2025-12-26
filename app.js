@@ -508,6 +508,34 @@ function monthlyTotals() {
   return { entrate, uscite };
 }
 
+function monthlySeries(months = 12) {
+  const now = new Date();
+  const labels = [];
+  const entrate = [];
+  const uscite = [];
+
+  for (let i = months - 1; i >= 0; i -= 1) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const y = d.getFullYear();
+    const m = d.getMonth();
+    labels.push(d.toLocaleDateString("it-IT", { month: "short" }));
+    const movs = state.movimenti.filter(mv => {
+      const md = new Date(mv.dateISO);
+      return md.getFullYear() === y && md.getMonth() === m;
+    });
+    let inc = 0;
+    let out = 0;
+    movs.forEach(mv => {
+      if (mv.tipo === "entrata") inc += mv.importo;
+      else out += mv.importo;
+    });
+    entrate.push(Math.round(inc * 100) / 100);
+    uscite.push(Math.round(out * 100) / 100);
+  }
+
+  return { labels, entrate, uscite };
+}
+
 // ---------------------------------------------------------------------------
 // HOME
 // ---------------------------------------------------------------------------
@@ -574,6 +602,84 @@ function renderHome() {
         showToast("Lavoro eliminato");
       });
     });
+  });
+}
+
+function renderQuickActions() {
+  const wrap = $("#quick-actions");
+  if (!wrap) return;
+  wrap.innerHTML = `
+    <button id="qa-job" type="button" class="action-tile">
+      <span class="icon-badge"><i class="fa-solid fa-briefcase"></i></span>
+      <span>
+        <p class="tile-title">Nuovo lavoro</p>
+        <p class="tile-sub">Crea una nuova commessa</p>
+      </span>
+    </button>
+    <button id="qa-payment" type="button" class="action-tile">
+      <span class="icon-badge success"><i class="fa-solid fa-coins"></i></span>
+      <span>
+        <p class="tile-title">Nuovo incasso</p>
+        <p class="tile-sub">Registra un pagamento</p>
+      </span>
+    </button>
+    <button id="qa-quote" type="button" class="action-tile">
+      <span class="icon-badge info"><i class="fa-solid fa-file-invoice"></i></span>
+      <span>
+        <p class="tile-title">Nuovo preventivo</p>
+        <p class="tile-sub">Avvia il wizard rapido</p>
+      </span>
+    </button>
+  `;
+}
+
+function renderHomeChart() {
+  const canvas = $("#kpi-chart");
+  if (!canvas || typeof Chart === "undefined") return;
+  const { labels, entrate, uscite } = monthlySeries(12);
+  if (chart) chart.destroy();
+  chart = new Chart(canvas, {
+    type: "line",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: "Entrate",
+          data: entrate,
+          borderColor: "#10b981",
+          backgroundColor: "rgba(16, 185, 129, 0.12)",
+          fill: true,
+          tension: 0.35,
+          pointRadius: 2,
+        },
+        {
+          label: "Uscite",
+          data: uscite,
+          borderColor: "#f43f5e",
+          backgroundColor: "rgba(244, 63, 94, 0.1)",
+          fill: true,
+          tension: 0.35,
+          pointRadius: 2,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, position: "bottom", labels: { usePointStyle: true } },
+        tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${formatMoney.format(ctx.parsed.y || 0)}` } },
+      },
+      scales: {
+        x: { grid: { display: false } },
+        y: {
+          ticks: {
+            callback: (value) => formatMoney.format(value),
+          },
+          grid: { color: "rgba(148, 163, 184, 0.2)" },
+        },
+      },
+    },
   });
 }
 
@@ -1295,6 +1401,7 @@ function renderAll() {
   renderBrand();
   renderNav();
   renderHome();
+  renderHomeChart();
   renderJobs();
   if (ui.activeJobId) {
     // Aggiorna immediatamente i KPI del dettaglio lavoro (incassi/acconti inclusi)
@@ -1622,6 +1729,7 @@ function showDiagnosticReport() {
 function init() {
   renderStorageWarning();
   renderBrand();
+  renderQuickActions();
   initEvents();
   renderAll();
 }
