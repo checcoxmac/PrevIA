@@ -81,7 +81,10 @@
         <!-- HOME VIEW -->
         <section id="view-home" class="view-section hidden">
           <div class="screen-head">
-            <h1 class="screen-title">Home</h1>
+            <div>
+              <h1 class="screen-title">Home</h1>
+              <p class="screen-subtitle">Panoramica rapida su lavori, incassi e acquisti</p>
+            </div>
             <button id="btn-home-new" type="button" class="btn-main btn-compact">
               <i class="fa-solid fa-plus"></i>
             </button>
@@ -106,6 +109,19 @@
           <!-- QUICK ACTIONS -->
           <div id="quick-actions" class="grid grid-cols-1 sm:grid-cols-3 gap-3"></div>
 
+          <!-- CHART -->
+          <div class="surface chart-surface">
+            <div class="surface-head">
+              <div>
+                <h3 class="surface-title">Andamento 12 mesi</h3>
+                <p class="text-sm text-slate-500">Entrate vs uscite</p>
+              </div>
+            </div>
+            <div class="chart-wrap">
+              <canvas id="kpi-chart" height="160" aria-label="Grafico entrate e uscite"></canvas>
+            </div>
+          </div>
+
           <!-- OPEN JOBS -->
           <div class="surface">
             <div class="surface-head">
@@ -115,6 +131,16 @@
               <button id="btn-home-view-all" type="button" class="btn-ghost btn-compact" aria-label="Vedi tutti">Vedi tutti</button>
             </div>
             <div id="home-open-jobs" class="space-y-3"></div>
+          </div>
+
+          <div class="surface">
+            <div class="surface-head">
+              <div>
+                <h3 class="surface-title">Ultimi movimenti</h3>
+                <p class="text-sm text-slate-500">Entrate e uscite recenti</p>
+              </div>
+            </div>
+            <div id="home-recent-movements" class="space-y-2"></div>
           </div>
         </section>
 
@@ -155,7 +181,10 @@
               <button id="btn-job-back" type="button" class="btn-ghost btn-compact" aria-label="Indietro">
                 <i class="fa-solid fa-arrow-left"></i>
               </button>
-              <h1 id="job-title" class="screen-title">-</h1>
+              <div>
+                <h1 id="job-title" class="screen-title">-</h1>
+                <span id="job-status" class="badge warning">Aperto</span>
+              </div>
             </div>
             <button id="btn-job-delete" type="button" class="btn-ghost danger btn-compact" aria-label="Elimina">
               <i class="fa-solid fa-trash"></i>
