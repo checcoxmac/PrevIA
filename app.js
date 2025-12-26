@@ -560,13 +560,17 @@ function renderHome() {
     const paid = getJobPaid(job.id);
     return `
       <article class="job-card" data-job="${job.id}">
-        <button type="button" class="trash" data-trash="${job.id}"><i class="fa-solid fa-trash"></i></button>
-        <div class="flex items-start justify-between gap-2">
+        <div class="job-card-header">
           <div>
             <p class="font-semibold">${escapeHTML(job.titolo)}</p>
             <p class="text-xs text-slate-500">${escapeHTML(job.cliente)} · ${escapeHTML(job.commessa)}</p>
           </div>
-          <span class="badge warning">Residuo</span>
+          <div class="job-card-actions">
+            <span class="badge warning">Residuo</span>
+            <button type="button" class="icon-btn danger" data-trash="${job.id}" aria-label="Elimina lavoro">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
         </div>
         <div class="flex items-end justify-between mt-3">
           <div>
@@ -681,6 +685,32 @@ function renderHomeChart() {
       },
     },
   });
+}
+
+function renderHomeRecentMovements() {
+  const wrap = $("#home-recent-movements");
+  if (!wrap) return;
+  const items = [...state.movimenti]
+    .sort((a, b) => new Date(b.dateISO) - new Date(a.dateISO))
+    .slice(0, 5);
+
+  if (!items.length) {
+    wrap.innerHTML = '<p class="text-sm text-slate-500">Nessun movimento registrato.</p>';
+    return;
+  }
+
+  wrap.innerHTML = items.map(m => `
+    <div class="list-row">
+      <div class="left">
+        <div class="title">${escapeHTML(m.desc || (m.tipo === "entrata" ? "Entrata" : "Uscita"))}</div>
+        <div class="meta">${fmtShortDate(m.dateISO)} · ${escapeHTML(m.controparteNome || "N/D")}</div>
+      </div>
+      <div class="text-right">
+        <div class="title ${m.tipo === "entrata" ? "text-emerald-600" : "text-rose-600"}">${formatMoney.format(m.importo)}</div>
+        <div class="meta">${m.tipo === "entrata" ? "Entrata" : "Uscita"}</div>
+      </div>
+    </div>
+  `).join("");
 }
 
 // ---------------------------------------------------------------------------
@@ -1402,6 +1432,7 @@ function renderAll() {
   renderNav();
   renderHome();
   renderHomeChart();
+  renderHomeRecentMovements();
   renderJobs();
   if (ui.activeJobId) {
     // Aggiorna immediatamente i KPI del dettaglio lavoro (incassi/acconti inclusi)
