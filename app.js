@@ -508,6 +508,34 @@ function monthlyTotals() {
   return { entrate, uscite };
 }
 
+function monthlySeries(months = 12) {
+  const now = new Date();
+  const labels = [];
+  const entrate = [];
+  const uscite = [];
+
+  for (let i = months - 1; i >= 0; i -= 1) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const y = d.getFullYear();
+    const m = d.getMonth();
+    labels.push(d.toLocaleDateString("it-IT", { month: "short" }));
+    const movs = state.movimenti.filter(mv => {
+      const md = new Date(mv.dateISO);
+      return md.getFullYear() === y && md.getMonth() === m;
+    });
+    let inc = 0;
+    let out = 0;
+    movs.forEach(mv => {
+      if (mv.tipo === "entrata") inc += mv.importo;
+      else out += mv.importo;
+    });
+    entrate.push(Math.round(inc * 100) / 100);
+    uscite.push(Math.round(out * 100) / 100);
+  }
+
+  return { labels, entrate, uscite };
+}
+
 // ---------------------------------------------------------------------------
 // HOME
 // ---------------------------------------------------------------------------
@@ -532,13 +560,17 @@ function renderHome() {
     const paid = getJobPaid(job.id);
     return `
       <article class="job-card" data-job="${job.id}">
-        <button type="button" class="trash" data-trash="${job.id}"><i class="fa-solid fa-trash"></i></button>
-        <div class="flex items-start justify-between gap-2">
+        <div class="job-card-header">
           <div>
             <p class="font-semibold">${escapeHTML(job.titolo)}</p>
             <p class="text-xs text-slate-500">${escapeHTML(job.cliente)} · ${escapeHTML(job.commessa)}</p>
           </div>
-          <span class="badge warning">Residuo</span>
+          <div class="job-card-actions">
+            <span class="badge warning">Residuo</span>
+            <button type="button" class="icon-btn danger" data-trash="${job.id}" aria-label="Elimina lavoro">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
         </div>
         <div class="flex items-end justify-between mt-3">
           <div>
@@ -575,6 +607,110 @@ function renderHome() {
       });
     });
   });
+}
+
+function renderQuickActions() {
+  const wrap = $("#quick-actions");
+  if (!wrap) return;
+  wrap.innerHTML = `
+    <button id="qa-job" type="button" class="action-tile">
+      <span class="icon-badge"><i class="fa-solid fa-briefcase"></i></span>
+      <span>
+        <p class="tile-title">Nuovo lavoro</p>
+        <p class="tile-sub">Crea una nuova commessa</p>
+      </span>
+    </button>
+    <button id="qa-payment" type="button" class="action-tile">
+      <span class="icon-badge success"><i class="fa-solid fa-coins"></i></span>
+      <span>
+        <p class="tile-title">Nuovo incasso</p>
+        <p class="tile-sub">Registra un pagamento</p>
+      </span>
+    </button>
+    <button id="qa-quote" type="button" class="action-tile">
+      <span class="icon-badge info"><i class="fa-solid fa-file-invoice"></i></span>
+      <span>
+        <p class="tile-title">Nuovo preventivo</p>
+        <p class="tile-sub">Avvia il wizard rapido</p>
+      </span>
+    </button>
+  `;
+}
+
+function renderHomeChart() {
+  const canvas = $("#kpi-chart");
+  if (!canvas || typeof Chart === "undefined") return;
+  const { labels, entrate, uscite } = monthlySeries(12);
+  if (chart) chart.destroy();
+  chart = new Chart(canvas, {
+    type: "line",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: "Entrate",
+          data: entrate,
+          borderColor: "#10b981",
+          backgroundColor: "rgba(16, 185, 129, 0.12)",
+          fill: true,
+          tension: 0.35,
+          pointRadius: 2,
+        },
+        {
+          label: "Uscite",
+          data: uscite,
+          borderColor: "#f43f5e",
+          backgroundColor: "rgba(244, 63, 94, 0.1)",
+          fill: true,
+          tension: 0.35,
+          pointRadius: 2,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, position: "bottom", labels: { usePointStyle: true } },
+        tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${formatMoney.format(ctx.parsed.y || 0)}` } },
+      },
+      scales: {
+        x: { grid: { display: false } },
+        y: {
+          ticks: {
+            callback: (value) => formatMoney.format(value),
+          },
+          grid: { color: "rgba(148, 163, 184, 0.2)" },
+        },
+      },
+    },
+  });
+}
+
+function renderHomeRecentMovements() {
+  const wrap = $("#home-recent-movements");
+  if (!wrap) return;
+  const items = [...state.movimenti]
+    .sort((a, b) => new Date(b.dateISO) - new Date(a.dateISO))
+    .slice(0, 5);
+
+  if (!items.length) {
+    wrap.innerHTML = '<p class="text-sm text-slate-500">Nessun movimento registrato.</p>';
+    return;
+  }
+
+  wrap.innerHTML = items.map(m => `
+    <div class="list-row">
+      <div class="left">
+        <div class="title">${escapeHTML(m.desc || (m.tipo === "entrata" ? "Entrata" : "Uscita"))}</div>
+        <div class="meta">${fmtShortDate(m.dateISO)} · ${escapeHTML(m.controparteNome || "N/D")}</div>
+      </div>
+      <div class="text-right">
+        <div class="title ${m.tipo === "entrata" ? "text-emerald-600" : "text-rose-600"}">${formatMoney.format(m.importo)}</div>
+        <div class="meta">${m.tipo === "entrata" ? "Entrata" : "Uscita"}</div>
+      </div>
+    </div>
+  `).join("");
 }
 
 // ---------------------------------------------------------------------------
@@ -1295,6 +1431,8 @@ function renderAll() {
   renderBrand();
   renderNav();
   renderHome();
+  renderHomeChart();
+  renderHomeRecentMovements();
   renderJobs();
   if (ui.activeJobId) {
     // Aggiorna immediatamente i KPI del dettaglio lavoro (incassi/acconti inclusi)
@@ -1622,6 +1760,7 @@ function showDiagnosticReport() {
 function init() {
   renderStorageWarning();
   renderBrand();
+  renderQuickActions();
   initEvents();
   renderAll();
 }
