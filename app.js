@@ -735,7 +735,7 @@ function renderJobs() {
     const badge = job.stato === "chiuso" ? "success" : job.stato === "archived" ? "" : "warning";
     const label = job.stato === "chiuso" ? "Chiuso" : job.stato === "archived" ? "Archiviato" : "Aperto";
     return `
-      <article class="list-row" data-job="${job.id}" style="position:relative;">
+      <article class="list-row" data-job="${job.id}">
         <div class="left">
           <div class="title">${escapeHTML(job.titolo)}</div>
           <div class="meta">${escapeHTML(job.cliente)} · ${escapeHTML(job.commessa)}</div>
@@ -744,8 +744,12 @@ function renderJobs() {
           <div><strong>${formatMoney.format(due)}</strong></div>
           <div class="meta">Incassato ${formatMoney.format(paid)}</div>
         </div>
-        <span class="badge ${badge}">${label}</span>
-        <button type="button" class="btn-ghost danger btn-compact" data-job-del="${job.id}" style="position:absolute;top:8px;right:8px;"><i class="fa-solid fa-trash"></i></button>
+        <div class="list-row-actions">
+          <span class="badge ${badge}">${label}</span>
+          <button type="button" class="icon-btn danger" data-job-del="${job.id}" aria-label="Elimina lavoro">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
       </article>`;
   }).join("");
 

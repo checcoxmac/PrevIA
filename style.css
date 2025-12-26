@@ -1010,46 +1010,6 @@ select:focus {
   .content-inner { padding: 0 !important; }
   #print-root * { break-inside: avoid; }
 }
-.input {
-  width: 100%;
-  padding: 12px 14px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-light);
-  background: var(--bg-card);
-  font: var(--text-body);
-  color: var(--text-primary);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-}
-
-.input:focus,
-textarea:focus,
-select:focus {
-  outline: none;
-  border-color: var(--accent);
-  background: var(--bg-card);
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-}
-
-.input::placeholder {
-  color: var(--text-muted);
-}
-
-.job-card {
-  position: relative;
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius-lg);
-  padding: var(--space-md);
-  background: var(--bg-card);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.job-card:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
-  border-color: var(--accent);
-}
-
 .job-card-header {
   display: flex;
   align-items: flex-start;
@@ -1086,6 +1046,38 @@ select:focus {
   border-color: rgba(239, 68, 68, 0.3);
   color: var(--danger);
   background: rgba(239, 68, 68, 0.08);
+}
+
+.job-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+.job-card-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border-light);
+  background: #ffffff;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.icon-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: var(--shadow-sm);
 }
 
 .icon-btn.danger:hover {
@@ -1158,6 +1150,12 @@ select:focus {
   font: var(--text-meta);
   color: var(--text-muted);
   margin-top: 2px;
+}
+
+.list-row-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
 }
 
 .quote-card {
@@ -1304,11 +1302,6 @@ select:focus {
 
 .col-span-2 {
   grid-column: span 2;
-}
-
-/* Smooth transitions for tab content */
-.view-section {
-  animation: fadeIn 0.2s ease-in;
 }
 
 /* Ensure main content scrolls on mobile with nav */
